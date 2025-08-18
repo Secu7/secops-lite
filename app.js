@@ -258,3 +258,64 @@ window.addEventListener('load', ()=>{
   const btn = document.getElementById('loadDemoBtn'); if(btn) btn.addEventListener('click', loadDemoData);
   computeKPIs(); drawSevChart();
 });
+
+// ===== Big Demo Generator (no download needed) =====
+function rndChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function rndInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function fmtLocal(dt){ // YYYY-MM-DDTHH:MM for datetime-local
+  const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,'0'), d=String(dt.getDate()).padStart(2,'0');
+  const H=String(dt.getHours()).padStart(2,'0'), M=String(dt.getMinutes()).padStart(2,'0');
+  return `${y}-${m}-${d}T${H}:${M}`;
+}
+function generateBigDemo(nInc=120, nAccess=40){
+  const now = new Date();
+  const severities = ["Low","Medium","High","Critical"];
+  const statuses   = ["Open","In Progress","Resolved"];
+  const tagsPool = ["ids","siem","edr","mfa","vpn","waf","iam","o365","azure","ad","backup","db","phishing","malware","ransomware","patch","vuln","linux","windows","gpo","sso","network","latency","ssl","dns","dhcp","firewall","proxy","k8s","s3","ec2"];
+  const titles = [
+    "Unauthorized login attempts detected","Phishing report from user","Backup job failed on DB server","Endpoint malware quarantine event","VPN login from unusual location","Certificate about to expire","High CPU on application server","Suspicious PowerShell execution","Excessive 4xx on web gateway","Email forwarding rule created","Password spray detected","Service account token expired","Disk space low on file server","New admin added to Azure AD","Failed Windows updates","WAF blocked SQLi pattern","IDS burst after rule update","Unpatched critical CVE exposure","Database connection timeouts","S3 bucket public access attempt","Kubernetes pod crashloop","DHCP pool exhaustion warning","DNS zone transfer attempt","RDP port scan observed","Wi-Fi rogue AP detected","Suspicious OAuth consent","Shadow IT SaaS discovery","Okta MFA bypass attempt","Expired SSL on internal site","Abnormal data egress volume"
+  ];
+  // Incidents
+  const incs = [];
+  for(let i=0;i<nInc;i++){
+    const title = rndChoice(titles);
+    const sev = rndChoice(["Low","Medium","Medium","High","High","Critical"]); // 가중치
+    const status = rndChoice(statuses);
+    const when = new Date(now.getTime() - rndInt(0,45)*86400000 - rndInt(0,23)*3600000 - rndInt(0,59)*60000);
+    let ack = "", resolved = "";
+    if(Math.random()<0.7){ const ackDt = new Date(when.getTime() + rndInt(5,240)*60000); ack = fmtLocal(ackDt); }
+    if(status==="Resolved" && Math.random()<0.85){
+      const base = ack? new Date(ack): when;
+      const resDt = new Date(base.getTime() + rndInt(30, 24*60)*60000);
+      resolved = fmtLocal(resDt);
+    }
+    const tags = [...new Set(Array.from({length:rndInt(2,4)},()=>rndChoice(tagsPool)))];
+    const desc = `${title}. Triage performed; scope validated. Actions: applied controls, updated playbook, notified stakeholders. Next steps: monitor and review in change window.`;
+    const evidence = Math.random()<0.6 ? [`https://example.com/ticket/${uid()}`, `https://example.com/logs/${uid()}`] : [];
+    incs.push({
+      id: uid(), title: title, severity: sev, status,
+      tags, when: fmtLocal(when), ack, resolved, desc, evidence
+    });
+  }
+  // Access items
+  const owners = ["IT Ops","Security","Helpdesk","Infra","IAM"];
+  const accessTexts = [
+    "Quarterly access review — Finance group","Terminate leavers — deprovision within 24h","Privileged accounts re-certification","Service accounts inventory & rotation","VPN access attestation","Shared mailbox ownership validation","Role-based access update — HRIS","Contractor access end-date check","Okta group membership review","External guest review — Teams/SharePoint","Admin portal access least-privilege check","Break-glass account controls review","Dormant account clean-up (90d)","Production DB access approvals audit","Firewall management access validation","S3 bucket access policy audit","GitHub org admin review","MFA exceptions review","SSO app entitlements baseline","New joiners access checklist QA"
+  ];
+  const acc = [];
+  for(let i=0;i<nAccess;i++){
+    const due = new Date(now.getTime() + rndInt(7,75)*86400000);
+    acc.push({ id: uid(), text: accessTexts[i % accessTexts.length], owner: rndChoice(owners), due: due.toISOString().slice(0,10), done: Math.random()<0.2 });
+  }
+  // apply
+  state.incidents = incs;
+  state.access = acc;
+  saveState(); renderIncidents(); renderAccess(); computeKPIs(); drawSevChart();
+  alert(`Generated ${nInc} incidents + ${nAccess} access items`);
+}
+// Bind button
+window.addEventListener('load', ()=>{
+  const bigBtn = document.getElementById('generateBigDemoBtn');
+  if(bigBtn) bigBtn.addEventListener('click', ()=>generateBigDemo(120,40));
+});
+
