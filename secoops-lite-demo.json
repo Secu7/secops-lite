@@ -1,0 +1,36 @@
+{
+  "incidents": [
+    {
+      "id": "demo1",
+      "title": "Alert noise after new IDS rule",
+      "severity": "Medium",
+      "status": "In Progress",
+      "tags": ["ids","tuning","noise"],
+      "when": "2025-08-18T09:00",
+      "desc": "Spike in IDS alerts post new rule set. Narrow rule scope, allowlist known subnets, post-change review."
+    },
+    {
+      "id": "demo2",
+      "title": "Unauthorized admin login attempts",
+      "severity": "High",
+      "status": "Resolved",
+      "tags": ["iam","brute-force","auth"],
+      "when": "2025-08-17T14:30",
+      "desc": "Multiple failed admin logins from foreign ASN. Enforced MFA, temp IP block, rotated creds, reviewed logs."
+    },
+    {
+      "id": "demo3",
+      "title": "Backup job failure on WS2016-DB01",
+      "severity": "Medium",
+      "status": "Open",
+      "tags": ["backup","ws2016","jobs"],
+      "when": "2025-08-16T23:00",
+      "desc": "Nightly backup exit code 1. Check quota, restart agent, rerun incremental; full backup planned."
+    }
+  ],
+  "access": [
+    { "id": "a1", "text": "Quarterly access review — Finance group", "owner": "IT Ops", "due": "2025-09-30", "done": false },
+    { "id": "a2", "text": "Deprovision terminated users (last 30 days)", "owner": "Helpdesk", "due": "2025-08-31", "done": false },
+    { "id": "a3", "text": "Privileged accounts re-certification", "owner": "Security", "due": "2025-10-15", "done": false }
+  ]
+}

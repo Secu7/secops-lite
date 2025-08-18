@@ -137,3 +137,74 @@ qs('#runFilterBtn').addEventListener('click', ()=>{
   qs('#logOutput').textContent = lines.join('\n');
 });
 qs('#clearLogsBtn').addEventListener('click', ()=>{ qs('#logInput').value=''; qs('#logFilter').value=''; qs('#logOutput').textContent=''; });
+
+// ---- Demo seeding ----
+function loadDemoData(){
+  // Sample Incidents
+  const demoIncidents = [
+    {
+      id: uid(),
+      title: "Alert noise after new IDS rule",
+      severity: "Medium",
+      status: "In Progress",
+      tags: ["ids","tuning","noise"],
+      when: new Date().toISOString().slice(0,16), // yyyy-MM-ddTHH:mm
+      desc: "Spike in IDS alerts post new rule set. Triaged sample events, found benign service traffic. Action: narrow rule scope; add allowlist for known subnets; schedule post-change review."
+    },
+    {
+      id: uid(),
+      title: "Unauthorized admin login attempts",
+      severity: "High",
+      status: "Resolved",
+      tags: ["iam","brute-force","auth"],
+      when: new Date(Date.now()-3600*1000*24).toISOString().slice(0,16),
+      desc: "Multiple failed admin logins from foreign ASN. Action: enforced MFA check, temporary IP block, rotated credentials, reviewed audit logs. Evidence captured in screenshots."
+    },
+    {
+      id: uid(),
+      title: "Backup job failure on WS2016-DB01",
+      severity: "Medium",
+      status: "Open",
+      tags: ["backup","ws2016","jobs"],
+      when: new Date(Date.now()-3600*1000*48).toISOString().slice(0,16),
+      desc: "Nightly backup reported exit code 1. Action: checked storage quota, restarted agent, re-ran incremental; plan full backup this weekend; add alert on non-zero exit."
+    }
+  ];
+
+  // Sample Access Review items
+  const demoAccess = [
+    { id: uid(), text: "Quarterly access review — Finance group", owner: "IT Ops", due: "2025-09-30", done: false },
+    { id: uid(), text: "Deprovision terminated users (last 30 days)", owner: "Helpdesk", due: "2025-08-31", done: false },
+    { id: uid(), text: "Privileged accounts re-certification", owner: "Security", due: "2025-10-15", done: false }
+  ];
+
+  // Merge (기존 데이터 보존, 중복 최소화)
+  const titles = new Set(state.incidents.map(i=>i.title));
+  demoIncidents.forEach(i => { if(!titles.has(i.title)) state.incidents.unshift(i); });
+  state.access = [...demoAccess, ...state.access];
+
+  // Fill log parser demo text
+  const logBox = document.querySelector('#logInput');
+  if (logBox && !logBox.value.trim()){
+    logBox.value = [
+      "[2025-08-18T12:00:00Z] INFO connected",
+      "[2025-08-18T12:01:00Z] ERROR auth failed",
+      "[2025-08-18T12:02:00Z] WARN  high latency to db",
+      "[2025-08-18T12:03:00Z] INFO  backup job started",
+      "[2025-08-18T12:05:00Z] ERROR backup exit code 1"
+    ].join("\n");
+    const filt = document.querySelector('#logFilter');
+    if (filt) filt.value = "ERROR|WARN";
+  }
+
+  saveState();
+  renderIncidents();
+  renderAccess();
+  alert("Sample data loaded!");
+}
+
+// 버튼 이벤트 연결 (로드 시 안전하게 바인딩)
+window.addEventListener('load', ()=>{
+  const btn = document.getElementById('loadDemoBtn');
+  if (btn) btn.addEventListener('click', loadDemoData);
+});

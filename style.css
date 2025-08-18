@@ -5,12 +5,6 @@ h1{margin:0;font-size:20px}
 button,.file-label{background:#1f2937;color:#e5e7eb;border:1px solid #334155;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:14px}
 button:hover,.file-label:hover{background:#273449}
 .file-label input{display:none}
-.btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #334155;
-background:#1f2937;color:#e5e7eb;text-decoration:none;font-weight:600;margin-top:8px}
-.btn:hover{background:#273449}
-html.light .btn{background:#f1f5f9;color:#0b1220;border-color:#cbd5e1}
-html.light .btn:hover{background:#e2e8f0}
-
 .tabs{display:flex;gap:6px;padding:8px 16px;background:#0f172a;border-bottom:1px solid #1f2937}
 .tab{background:#0b1220;border:1px solid #1f2937;border-radius:8px;padding:6px 10px;color:#cbd5e1}
 .tab.active{background:#1f2937;color:#fff}
@@ -36,4 +30,8 @@ html.light .app-header,html.light .tabs,html.light .form,html.light .pre{backgro
 html.light .table th{background:#f1f5f9}
 html.light button,html.light .file-label{background:#f1f5f9;color:#0b1220;border-color:#cbd5e1}
 html.light input,html.light select,html.light textarea{background:#fff;color:#0b1220;border-color:#cbd5e1}
-
+.btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #334155;
+background:#1f2937;color:#e5e7eb;text-decoration:none;font-weight:600;margin-top:8px}
+.btn:hover{background:#273449}
+html.light .btn{background:#f1f5f9;color:#0b1220;border-color:#cbd5e1}
+html.light .btn:hover{background:#e2e8f0}
