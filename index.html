@@ -4,43 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SecOps Lite — Incident & Access Review Toolkit</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
   <meta name="theme-color" content="#0f172a">
-  
-  <link rel="stylesheet" href="style.css" />
-  <meta name="theme-color" content="#0f172a">
+  <!-- Charts & PDF -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1"></script>
-
-
 </head>
 <body>
   <header class="app-header">
-    <h1>SecOps Lite</h1>
+    <h1>SecOps Lite — v1.1</h1>
     <div class="actions">
       <button id="exportJsonBtn" title="Export all data (JSON)">Export</button>
       <label class="file-label">Import <input type="file" id="importJsonInput" accept="application/json" /></label>
-      <button id="darkModeBtn" title="Toggle theme">Dark</button>
+      <button id="darkModeBtn" title="Toggle theme">Theme</button>
     </div>
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="incidents">Incidents</button>
-    <button class="tab" data-tab="access">Access Review</button>
-    <button class="tab" data-tab="logs">Log Parser</button>
-    <button class="tab" data-tab="about">About</button>
-    
     <button class="tab active" data-tab="dash">Dashboard</button>
     <button class="tab" data-tab="incidents">Incidents</button>
     <button class="tab" data-tab="access">Access Review</button>
     <button class="tab" data-tab="logs">Log Parser</button>
     <button class="tab" data-tab="about">About</button>
-
-
   </nav>
 
   <main>
-    <section id="incidents" class="tab-panel active">
+    <!-- Dashboard -->
+    <section id="dash" class="tab-panel active">
+      <h2>Operations Dashboard</h2>
+      <div class="kpis">
+        <div class="kpi"><span id="kOpen">0</span><label>Open Incidents</label></div>
+        <div class="kpi"><span id="kMTTA">–</span><label>MTTA</label></div>
+        <div class="kpi"><span id="kMTTR">–</span><label>MTTR</label></div>
+      </div>
+      <canvas id="sevChart" height="120"></canvas>
+    </section>
+
+    <!-- Incidents -->
+    <section id="incidents" class="tab-panel">
       <div class="panel-header">
         <h2>Incident Logbook</h2>
         <div class="inline-actions">
@@ -49,18 +50,28 @@
           <button id="newIncidentBtn">New</button>
         </div>
       </div>
+
       <div id="incidentForm" class="form hidden">
         <h3 id="formTitle">New Incident</h3>
         <div class="grid">
           <label>Title<input type="text" id="iTitle" required></label>
           <label>Severity
-            <select id="iSeverity"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+            <select id="iSeverity">
+              <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
+            </select>
           </label>
           <label>Status
-            <select id="iStatus"><option>Open</option><option>In Progress</option><option>Resolved</option></select>
+            <select id="iStatus">
+              <option>Open</option><option>In Progress</option><option>Resolved</option>
+            </select>
           </label>
           <label>Tags (comma)<input type="text" id="iTags" placeholder="network, access"></label>
           <label>Occurred At<input type="datetime-local" id="iWhen"></label>
+
+          <!-- 업그레이드 필드 -->
+          <label>Acknowledged At<input type="datetime-local" id="iAck"></label>
+          <label>Resolved At<input type="datetime-local" id="iResolved"></label>
+          <label>Evidence URLs (comma)<input type="text" id="iEvidence" placeholder="https://link1, https://link2"></label>
         </div>
         <label>Description<textarea id="iDesc" rows="4" placeholder="What happened, triage steps, evidence, etc."></textarea></label>
         <div class="form-actions">
@@ -68,12 +79,18 @@
           <button id="cancelIncidentBtn" class="ghost">Cancel</button>
         </div>
       </div>
+
       <table id="incidentsTable" class="table">
-        <thead><tr><th>Title</th><th>Severity</th><th>Status</th><th>When</th><th>Tags</th><th></th></tr></thead>
+        <thead>
+          <tr>
+            <th>Title</th><th>Severity</th><th>Status</th><th>When</th><th>Tags</th><th></th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </section>
 
+    <!-- Access Review -->
     <section id="access" class="tab-panel">
       <div class="panel-header">
         <h2>Access Review Checklist</h2>
@@ -82,6 +99,7 @@
           <button id="resetAccessBtn" class="ghost">Reset</button>
         </div>
       </div>
+
       <div id="accessForm" class="form hidden">
         <h3 id="accessFormTitle">New Checklist Item</h3>
         <div class="grid">
@@ -94,12 +112,16 @@
           <button id="cancelAccessBtn" class="ghost">Cancel</button>
         </div>
       </div>
+
       <table id="accessTable" class="table">
-        <thead><tr><th>Done</th><th>Item</th><th>Owner</th><th>Due</th><th></th></tr></thead>
+        <thead>
+          <tr><th>Done</th><th>Item</th><th>Owner</th><th>Due</th><th></th></tr>
+        </thead>
         <tbody></tbody>
       </table>
     </section>
 
+    <!-- Log Parser -->
     <section id="logs" class="tab-panel">
       <h2>Log Parser</h2>
       <div class="grid">
@@ -113,53 +135,29 @@
       <pre id="logOutput" class="pre"></pre>
     </section>
 
+    <!-- About -->
     <section id="about" class="tab-panel">
-      <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
-
       <h2>About this demo</h2>
       <p><strong>SecOps Lite</strong> runs entirely in your browser (localStorage). No backend.</p>
       <ul>
-        <li>Incident Logbook: add/search/export (CSV/JSON)</li>
-        <li>Access Review: simple checklist with owner/due</li>
+        <li>Incident Logbook: add/search/export (CSV/JSON) + PDF report</li>
+        <li>Access Review: checklist with owner/due</li>
         <li>Log Parser: paste logs + regex/text filter</li>
-        <li>Offline PWA: basic install/offline via Service Worker</li>
+        <li>Dashboard: Open/MTTA/MTTR + Severity chart</li>
+        <li>Offline PWA: Service Worker caching</li>
       </ul>
+      <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
+      <a class="btn" href="docs/PIPEDA_Quick_Check_David_Ok_v1.1.pdf" target="_blank" rel="noopener">Open PIPEDA Quick-Check (PDF)</a>
       <p>Author: <strong>Seunguk (David) Ok</strong>. Portfolio demo — no personal data transmitted.</p>
     </section>
-
-    <section id="dash" class="tab-panel active">
-      <h2>Operations Dashboard</h2>
-      <div class="kpis">
-        <div class="kpi"><span id="kOpen">0</span><label>Open Incidents</label></div>
-        <div class="kpi"><span id="kMTTA">–</span><label>MTTA</label></div>
-        <div class="kpi"><span id="kMTTR">–</span><label>MTTR</label></div>
-      </div>
-      <canvas id="sevChart" height="120"></canvas>
-    </section>
-
-    <label>Acknowledged At
-      <input type="datetime-local" id="iAck">
-    </label>
-    <label>Resolved At
-      <input type="datetime-local" id="iResolved">
-    <label>Evidence URLs (comma)
-      <input type="text" id="iEvidence" placeholder="https://link1, https://link2">
-    </label>
-
-    <button data-id="${i.id}" class="small report">Report</button>
-
-    <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
-    <a class="btn" href="docs/PIPEDA_Quick_Check_David_Ok_v1.1.pdf" target="_blank" rel="noopener">Open PIPEDA Quick-Check (PDF)</a>
-
-
   </main>
 
-  <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.0</span></footer>
+  <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.1</span></footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=4'));
     }
   </script>
 </body>

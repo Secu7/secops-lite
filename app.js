@@ -1,4 +1,4 @@
-// State (localStorage)
+// ===== State & helpers =====
 const state = {
   incidents: JSON.parse(localStorage.getItem('incidents')||'[]'),
   access: JSON.parse(localStorage.getItem('access')||'[]'),
@@ -12,19 +12,21 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 function dt(x){ try{return x?new Date(x).toLocaleString():''}catch{return x||''} }
 qs('#year').textContent = new Date().getFullYear();
 
-// Tabs
+// ===== Tabs =====
 qsa('.tab').forEach(b=>b.addEventListener('click',e=>{
   qsa('.tab').forEach(x=>x.classList.remove('active')); e.currentTarget.classList.add('active');
   qsa('.tab-panel').forEach(p=>p.classList.remove('active')); qs('#'+e.currentTarget.dataset.tab).classList.add('active');
 }));
 
-// Theme
+// ===== Theme =====
 qs('#darkModeBtn').addEventListener('click', ()=> document.documentElement.classList.toggle('light'));
 
-// Incidents
-function renderIncidents(f=''){
-  const tb = qs('#incidentsTable tbody'); tb.innerHTML = '';
-  state.incidents.filter(i=>(`${i.title} ${i.severity} ${i.status} ${i.tags}`).toLowerCase().includes(f.toLowerCase()))
+// ===== Incidents =====
+function renderIncidents(filter=''){
+  const tb = qs('#incidentsTable tbody'); if(!tb) return;
+  tb.innerHTML = '';
+  state.incidents
+    .filter(i => (`${i.title} ${i.severity} ${i.status} ${(i.tags||[]).join(' ')}`).toLowerCase().includes(filter.toLowerCase()))
     .forEach(i=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -33,19 +35,32 @@ function renderIncidents(f=''){
         <td>${i.status}</td>
         <td>${dt(i.when)}</td>
         <td>${(i.tags||[]).join(', ')}</td>
-        <td><button class="small edit" data-id="${i.id}">Edit</button> <button class="small danger del" data-id="${i.id}">Del</button></td>`;
+        <td>
+          <button class="small edit" data-id="${i.id}">Edit</button>
+          <button class="small danger del" data-id="${i.id}">Del</button>
+          <button class="small report" data-id="${i.id}">Report</button>
+        </td>`;
       tb.appendChild(tr);
     });
+  // bind actions
   qsa('button.edit', tb).forEach(b=>b.addEventListener('click', ()=>editIncident(b.dataset.id)));
   qsa('button.del', tb).forEach(b=>b.addEventListener('click', ()=>delIncident(b.dataset.id)));
+  qsa('button.report', tb).forEach(b=>b.addEventListener('click', ()=>reportIncidentPDF(b.dataset.id)));
 }
 renderIncidents();
 
+// form open/close
 function openIncidentForm(edit=false){ qs('#incidentForm').classList.remove('hidden'); qs('#formTitle').textContent = edit?'Edit Incident':'New Incident'; }
-function closeIncidentForm(){ qs('#incidentForm').classList.add('hidden'); ['#iTitle','#iTags','#iDesc','#iWhen'].forEach(s=>qs(s).value=''); qs('#iSeverity').value='Low'; qs('#iStatus').value='Open'; state.editingIncidentId=null; }
+function closeIncidentForm(){
+  qs('#incidentForm').classList.add('hidden');
+  ['#iTitle','#iTags','#iDesc','#iWhen','#iAck','#iResolved','#iEvidence'].forEach(s=>{const el=qs(s); if(el) el.value='';});
+  qs('#iSeverity').value='Low'; qs('#iStatus').value='Open'; state.editingIncidentId=null;
+}
 qs('#newIncidentBtn').addEventListener('click', ()=>openIncidentForm(false));
 qs('#cancelIncidentBtn').addEventListener('click', closeIncidentForm);
+qs('#searchIncidents').addEventListener('input', e=>renderIncidents(e.target.value));
 
+// save
 qs('#saveIncidentBtn').addEventListener('click', ()=>{
   const obj = {
     id: state.editingIncidentId || uid(),
@@ -54,23 +69,38 @@ qs('#saveIncidentBtn').addEventListener('click', ()=>{
     status: qs('#iStatus').value,
     tags: qs('#iTags').value.split(',').map(s=>s.trim()).filter(Boolean),
     when: qs('#iWhen').value,
+    ack: qs('#iAck').value || '',
+    resolved: qs('#iResolved').value || '',
+    evidence: (qs('#iEvidence').value||'').split(',').map(s=>s.trim()).filter(Boolean),
     desc: qs('#iDesc').value.trim(),
   };
-  if(!obj.title) return alert('Title required');
+  if(!obj.title){ alert('Title required'); return; }
   if(state.editingIncidentId) state.incidents = state.incidents.map(i=>i.id===obj.id?obj:i);
   else state.incidents.unshift(obj);
-  saveState(); renderIncidents(qs('#searchIncidents').value); closeIncidentForm();
+  saveState(); renderIncidents(qs('#searchIncidents').value); computeKPIs(); drawSevChart(); closeIncidentForm();
 });
-function editIncident(id){ const i = state.incidents.find(x=>x.id===id); if(!i) return; openIncidentForm(true);
+function editIncident(id){
+  const i = state.incidents.find(x=>x.id===id); if(!i) return;
+  openIncidentForm(true); state.editingIncidentId=id;
   qs('#iTitle').value=i.title; qs('#iSeverity').value=i.severity; qs('#iStatus').value=i.status;
-  qs('#iTags').value=(i.tags||[]).join(', '); qs('#iWhen').value=i.when||''; qs('#iDesc').value=i.desc||''; state.editingIncidentId=id; }
-function delIncident(id){ if(!confirm('Delete this incident?')) return; state.incidents = state.incidents.filter(i=>i.id!==id); saveState(); renderIncidents(qs('#searchIncidents').value); }
-qs('#searchIncidents').addEventListener('input', e=>renderIncidents(e.target.value));
+  qs('#iTags').value=(i.tags||[]).join(', '); qs('#iWhen').value=i.when||'';
+  qs('#iAck').value=i.ack||''; qs('#iResolved').value=i.resolved||'';
+  qs('#iEvidence').value=(i.evidence||[]).join(', ');
+  qs('#iDesc').value=i.desc||'';
+}
+function delIncident(id){
+  if(!confirm('Delete this incident?')) return;
+  state.incidents = state.incidents.filter(i=>i.id!==id);
+  saveState(); renderIncidents(qs('#searchIncidents').value); computeKPIs(); drawSevChart();
+}
 
 // CSV export
 qs('#exportCsvBtn').addEventListener('click', ()=>{
-  const rows = [['Title','Severity','Status','When','Tags','Description']];
-  state.incidents.forEach(i=>rows.push([i.title,i.severity,i.status,dt(i.when),(i.tags||[]).join('|'),i.desc||'']));
+  const rows = [['Title','Severity','Status','When','Ack','Resolved','Tags','Evidence','Description']];
+  state.incidents.forEach(i=>rows.push([
+    i.title,i.severity,i.status,i.when||'',i.ack||'',i.resolved||'',
+    (i.tags||[]).join('|'), (i.evidence||[]).join('|'), i.desc||''
+  ]));
   const csv = rows.map(r=>r.map(x=>`"${(x||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='incidents.csv'; a.click();
 });
@@ -82,17 +112,20 @@ qs('#exportJsonBtn').addEventListener('click', ()=>{
 });
 qs('#importJsonInput').addEventListener('change', e=>{
   const f = e.target.files[0]; if(!f) return; const r = new FileReader();
-  r.onload = ()=>{ try{ const obj = JSON.parse(r.result);
+  r.onload = ()=>{ try{
+    const obj = JSON.parse(r.result);
     if(Array.isArray(obj.incidents)) state.incidents=obj.incidents;
     if(Array.isArray(obj.access)) state.access=obj.access;
-    saveState(); renderIncidents(); renderAccess(); alert('Import successful');
+    saveState(); renderIncidents(); renderAccess(); computeKPIs(); drawSevChart();
+    alert('Import successful');
   }catch{ alert('Invalid JSON'); } };
   r.readAsText(f);
 });
 
-// Access review
+// ===== Access Review =====
 function renderAccess(){
-  const tb = qs('#accessTable tbody'); tb.innerHTML='';
+  const tb = qs('#accessTable tbody'); if(!tb) return;
+  tb.innerHTML='';
   state.access.forEach(a=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -126,7 +159,7 @@ function editAccess(id){ const it = state.access.find(x=>x.id===id); if(!it) ret
   qs('#aItem').value=it.text||''; qs('#aOwner').value=it.owner||''; qs('#aDue').value=it.due||''; state.editingAccessId=id; }
 function delAccess(id){ if(!confirm('Delete this item?')) return; state.access = state.access.filter(x=>x.id!==id); saveState(); renderAccess(); }
 
-// Log parser
+// ===== Log Parser =====
 qs('#runFilterBtn').addEventListener('click', ()=>{
   const text = qs('#logInput').value||'', filt = qs('#logFilter').value||'';
   let lines = text.split(/\r?\n/);
@@ -138,186 +171,34 @@ qs('#runFilterBtn').addEventListener('click', ()=>{
 });
 qs('#clearLogsBtn').addEventListener('click', ()=>{ qs('#logInput').value=''; qs('#logFilter').value=''; qs('#logOutput').textContent=''; });
 
-// ---- Demo seeding ----
-function loadDemoData(){
-  // Sample Incidents
-  const demoIncidents = [
-    {
-      id: uid(),
-      title: "Alert noise after new IDS rule",
-      severity: "Medium",
-      status: "In Progress",
-      tags: ["ids","tuning","noise"],
-      when: new Date().toISOString().slice(0,16), // yyyy-MM-ddTHH:mm
-      desc: "Spike in IDS alerts post new rule set. Triaged sample events, found benign service traffic. Action: narrow rule scope; add allowlist for known subnets; schedule post-change review."
-    },
-    {
-      id: uid(),
-      title: "Unauthorized admin login attempts",
-      severity: "High",
-      status: "Resolved",
-      tags: ["iam","brute-force","auth"],
-      when: new Date(Date.now()-3600*1000*24).toISOString().slice(0,16),
-      desc: "Multiple failed admin logins from foreign ASN. Action: enforced MFA check, temporary IP block, rotated credentials, reviewed audit logs. Evidence captured in screenshots."
-    },
-    {
-      id: uid(),
-      title: "Backup job failure on WS2016-DB01",
-      severity: "Medium",
-      status: "Open",
-      tags: ["backup","ws2016","jobs"],
-      when: new Date(Date.now()-3600*1000*48).toISOString().slice(0,16),
-      desc: "Nightly backup reported exit code 1. Action: checked storage quota, restarted agent, re-ran incremental; plan full backup this weekend; add alert on non-zero exit."
-    }
-  ];
-
-  // Sample Access Review items
-  const demoAccess = [
-    { id: uid(), text: "Quarterly access review — Finance group", owner: "IT Ops", due: "2025-09-30", done: false },
-    { id: uid(), text: "Deprovision terminated users (last 30 days)", owner: "Helpdesk", due: "2025-08-31", done: false },
-    { id: uid(), text: "Privileged accounts re-certification", owner: "Security", due: "2025-10-15", done: false }
-  ];
-
-  // Merge (기존 데이터 보존, 중복 최소화)
-  const titles = new Set(state.incidents.map(i=>i.title));
-  demoIncidents.forEach(i => { if(!titles.has(i.title)) state.incidents.unshift(i); });
-  state.access = [...demoAccess, ...state.access];
-
-  // Fill log parser demo text
-  const logBox = document.querySelector('#logInput');
-  if (logBox && !logBox.value.trim()){
-    logBox.value = [
-      "[2025-08-18T12:00:00Z] INFO connected",
-      "[2025-08-18T12:01:00Z] ERROR auth failed",
-      "[2025-08-18T12:02:00Z] WARN  high latency to db",
-      "[2025-08-18T12:03:00Z] INFO  backup job started",
-      "[2025-08-18T12:05:00Z] ERROR backup exit code 1"
-    ].join("\n");
-    const filt = document.querySelector('#logFilter');
-    if (filt) filt.value = "ERROR|WARN";
-  }
-
-  saveState();
-  renderIncidents();
-  renderAccess();
-  alert("Sample data loaded!");
-}
-
-// 버튼 이벤트 연결 (로드 시 안전하게 바인딩)
-window.addEventListener('load', ()=>{
-  const btn = document.getElementById('loadDemoBtn');
-  if (btn) btn.addEventListener('click', loadDemoData);
-});
-
-// ===== Utilities for time math =====
-function toDate(val){ try{return val?new Date(val):null}catch{return null} }
-function avgMs(arr){ if(!arr.length) return null; return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length); }
-function fmtDur(ms){
-  if(ms==null) return '–';
-  const s = Math.round(ms/1000);
-  if(s<60) return `${s}s`;
-  const m = Math.round(s/60); if(m<60) return `${m}m`;
-  const h = Math.round(m/60); if(h<48) return `${h}h`;
-  const d = Math.round(h/24); return `${d}d`;
-}
-
-// ===== KPIs (Open, MTTA, MTTR) =====
+// ===== KPIs & Chart =====
+function toDate(v){ try{return v?new Date(v):null}catch{return null} }
+function avgMs(a){ if(!a.length) return null; return Math.round(a.reduce((x,y)=>x+y,0)/a.length); }
+function fmt(ms){ if(ms==null) return '–'; const s=Math.round(ms/1000); if(s<60) return s+'s'; const m=Math.round(s/60); if(m<60) return m+'m'; const h=Math.round(m/60); if(h<48) return h+'h'; return Math.round(h/24)+'d'; }
 function computeKPIs(){
   const open = state.incidents.filter(i=>i.status!=='Resolved').length;
-
-  const mttas = []; // created -> acknowledged
-  const mttrs = []; // created(or acknowledged) -> resolved
-
+  const mttas=[], mttrs=[];
   state.incidents.forEach(i=>{
-    const created = toDate(i.when);
-    const ack = toDate(i.ack);
-    const res = toDate(i.resolved);
-    if(created && ack) mttas.push(ack - created);
-    if(res){
-      mttrs.push((ack||created) ? (res - (ack||created)) : (res - created));
-    }
+    const created=toDate(i.when), ack=toDate(i.ack), res=toDate(i.resolved);
+    if(created&&ack) mttas.push(ack-created);
+    if(res) mttrs.push((ack||created)?(res-(ack||created)):(res-created));
   });
-
-  const mtta = avgMs(mttas);
-  const mttr = avgMs(mttrs);
-
-  qs('#kOpen').textContent = open;
-  qs('#kMTTA').textContent = fmtDur(mtta);
-  qs('#kMTTR').textContent = fmtDur(mttr);
+  const kOpen= qs('#kOpen'); if(kOpen) kOpen.textContent=open;
+  const k1 = qs('#kMTTA'); if(k1) k1.textContent=fmt(avgMs(mttas));
+  const k2 = qs('#kMTTR'); if(k2) k2.textContent=fmt(avgMs(mttrs));
 }
-
-// Recompute after renders or state changes
-const _renderIncidents = renderIncidents;
-renderIncidents = function(filter=''){
-  _renderIncidents(filter);
-  computeKPIs();
-  drawSevChart();
-};
-const _renderAccess = renderAccess;
-renderAccess = function(){
-  _renderAccess();
-  computeKPIs();
-};
-
-// ===== Severity distribution chart =====
 let sevChart;
 function drawSevChart(){
-  const ctx = qs('#sevChart');
-  if(!ctx) return;
-  const counts = {Low:0, Medium:0, High:0, Critical:0};
-  state.incidents.forEach(i=>{ counts[i.severity] = (counts[i.severity]||0)+1; });
-  const data = [counts.Low||0, counts.Medium||0, counts.High||0, counts.Critical||0];
-
-  if(sevChart) { sevChart.data.datasets[0].data = data; sevChart.update(); return; }
-  sevChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Low','Medium','High','Critical'],
-      datasets: [{ label: 'Incidents', data }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display:false } },
-      scales: { y: { beginAtZero: true, ticks: { precision:0 } } }
-    }
+  const ctx = qs('#sevChart'); if(!ctx) return;
+  const counts = {Low:0,Medium:0,High:0,Critical:0};
+  state.incidents.forEach(i=>counts[i.severity]=(counts[i.severity]||0)+1);
+  const data=[counts.Low||0,counts.Medium||0,counts.High||0,counts.Critical||0];
+  if(sevChart){ sevChart.data.datasets[0].data=data; return sevChart.update(); }
+  sevChart = new Chart(ctx, { type:'bar',
+    data:{ labels:['Low','Medium','High','Critical'], datasets:[{label:'Incidents', data}] },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}} }
   });
 }
-
-// ===== Extend Incident form to capture ack/resolved/evidence =====
-const _saveIncidentBtn = qs('#saveIncidentBtn');
-if(_saveIncidentBtn){
-  _saveIncidentBtn.addEventListener('click', ()=>{
-    // Patch last saved object to include extra fields
-    // (We intercept by replacing the last-added or edited item based on id)
-    const id = state.editingIncidentId;
-    const iAck = qs('#iAck')?.value || '';
-    const iResolved = qs('#iResolved')?.value || '';
-    const evid = qs('#iEvidence')?.value || '';
-    function patch(o){
-      return { ...o, ack: iAck, resolved: iResolved, evidence: evid.split(',').map(s=>s.trim()).filter(Boolean) }
-    }
-    if(id){
-      state.incidents = state.incidents.map(x=>x.id===id?patch(x):x);
-    } else if(state.incidents.length){
-      state.incidents[0] = patch(state.incidents[0]); // last insert is at [0]
-    }
-    saveState(); computeKPIs(); drawSevChart();
-  });
-}
-
-// ===== Row actions: Edit/Delete/Report =====
-const _renderIncidentsRows = () => {
-  const tb = qs('#incidentsTable tbody');
-  if(!tb) return;
-  qsa('button.edit', tb).forEach(b=>b.addEventListener('click', ()=>editIncident(b.dataset.id)));
-  qsa('button.del', tb).forEach(b=>b.addEventListener('click', ()=>deleteIncident(b.dataset.id)));
-  qsa('button.report', tb).forEach(b=>b.addEventListener('click', ()=>reportIncidentPDF(b.dataset.id)));
-};
-// re-bind after each render
-const _origRender = _renderIncidents;
-_renderIncidents.bind = function(){};
-const _tbRender = qs('#incidentsTable tbody');
-new MutationObserver(_renderIncidentsRows).observe(qs('#incidentsTable tbody'), {childList:true});
 
 // ===== Incident PDF (jsPDF) =====
 function reportIncidentPDF(id){
@@ -325,30 +206,24 @@ function reportIncidentPDF(id){
   if(!i) return alert('Incident not found');
   const doc = new jspdf.jsPDF({unit:'pt', format:'a4'});
   const lh = 18, margin = 48; let y = margin;
-
   function addLine(text, bold=false){
     doc.setFont('Helvetica', bold? 'bold':'normal'); doc.setFontSize(12);
     const lines = doc.splitTextToSize(text, 515);
     lines.forEach(line=>{ doc.text(line, margin, y); y += lh; });
   }
-
   doc.setFont('Helvetica','bold'); doc.setFontSize(18); doc.text('Incident Report', margin, y); y+=24;
   addLine(`Title: ${i.title}`, true);
   addLine(`Severity: ${i.severity} | Status: ${i.status}`);
   addLine(`Occurred: ${i.when || ''}`);
   addLine(`Acknowledged: ${i.ack || '—'} | Resolved: ${i.resolved || '—'}`);
   addLine(`Tags: ${(i.tags||[]).join(', ')}`);
-  y+=6; addLine('Description:', true);
-  addLine(i.desc || '—');
-  if(i.evidence && i.evidence.length){
-    y+=6; addLine('Evidence URLs:', true);
-    i.evidence.forEach((u, idx)=> addLine(`${idx+1}. ${u}`));
-  }
+  y+=6; addLine('Description:', true); addLine(i.desc || '—');
+  if(i.evidence && i.evidence.length){ y+=6; addLine('Evidence URLs:', true); i.evidence.forEach((u, idx)=> addLine(`${idx+1}. ${u}`)); }
   y+=12; addLine(`Generated: ${new Date().toLocaleString()}`);
   doc.save(`incident_${(i.title||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.pdf`);
 }
 
-// ===== Demo seeding (button) =====
+// ===== Demo seed =====
 function loadDemoData(){
   const now = Date.now();
   const demoIncidents = [
@@ -373,18 +248,13 @@ function loadDemoData(){
     { id: uid(), text: "Deprovision terminated users (last 30 days)", owner: "Helpdesk", due: "2025-08-31", done: false },
     { id: uid(), text: "Privileged accounts re-certification", owner: "Security", due: "2025-10-15", done: false }
   ];
-  // Merge
   const titles = new Set(state.incidents.map(i=>i.title));
   demoIncidents.forEach(i => { if(!titles.has(i.title)) state.incidents.unshift(i); });
   state.access = [...demoAccess, ...state.access];
   saveState(); renderIncidents(); renderAccess(); computeKPIs(); drawSevChart();
   alert("Sample data loaded!");
 }
-
-// Bind sample-data button
 window.addEventListener('load', ()=>{
-  const btn = document.getElementById('loadDemoBtn');
-  if(btn){ btn.addEventListener('click', loadDemoData); }
+  const btn = document.getElementById('loadDemoBtn'); if(btn) btn.addEventListener('click', loadDemoData);
   computeKPIs(); drawSevChart();
 });
-
