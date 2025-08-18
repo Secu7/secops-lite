@@ -6,6 +6,13 @@
   <title>SecOps Lite — Incident & Access Review Toolkit</title>
   <link rel="stylesheet" href="style.css" />
   <meta name="theme-color" content="#0f172a">
+  
+  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0f172a">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1"></script>
+
+
 </head>
 <body>
   <header class="app-header">
@@ -22,6 +29,14 @@
     <button class="tab" data-tab="access">Access Review</button>
     <button class="tab" data-tab="logs">Log Parser</button>
     <button class="tab" data-tab="about">About</button>
+    
+    <button class="tab active" data-tab="dash">Dashboard</button>
+    <button class="tab" data-tab="incidents">Incidents</button>
+    <button class="tab" data-tab="access">Access Review</button>
+    <button class="tab" data-tab="logs">Log Parser</button>
+    <button class="tab" data-tab="about">About</button>
+
+
   </nav>
 
   <main>
@@ -111,6 +126,32 @@
       </ul>
       <p>Author: <strong>Seunguk (David) Ok</strong>. Portfolio demo — no personal data transmitted.</p>
     </section>
+
+    <section id="dash" class="tab-panel active">
+      <h2>Operations Dashboard</h2>
+      <div class="kpis">
+        <div class="kpi"><span id="kOpen">0</span><label>Open Incidents</label></div>
+        <div class="kpi"><span id="kMTTA">–</span><label>MTTA</label></div>
+        <div class="kpi"><span id="kMTTR">–</span><label>MTTR</label></div>
+      </div>
+      <canvas id="sevChart" height="120"></canvas>
+    </section>
+
+    <label>Acknowledged At
+      <input type="datetime-local" id="iAck">
+    </label>
+    <label>Resolved At
+      <input type="datetime-local" id="iResolved">
+    <label>Evidence URLs (comma)
+      <input type="text" id="iEvidence" placeholder="https://link1, https://link2">
+    </label>
+
+    <button data-id="${i.id}" class="small report">Report</button>
+
+    <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
+    <a class="btn" href="docs/PIPEDA_Quick_Check_David_Ok_v1.1.pdf" target="_blank" rel="noopener">Open PIPEDA Quick-Check (PDF)</a>
+
+
   </main>
 
   <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.0</span></footer>
