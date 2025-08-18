@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SecOps Lite — Incident & Access Review Toolkit</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0f172a">
+</head>
+<body>
+  <header class="app-header">
+    <h1>SecOps Lite</h1>
+    <div class="actions">
+      <button id="exportJsonBtn" title="Export all data (JSON)">Export</button>
+      <label class="file-label">Import <input type="file" id="importJsonInput" accept="application/json" /></label>
+      <button id="darkModeBtn" title="Toggle theme">Dark</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="incidents">Incidents</button>
+    <button class="tab" data-tab="access">Access Review</button>
+    <button class="tab" data-tab="logs">Log Parser</button>
+    <button class="tab" data-tab="about">About</button>
+  </nav>
+
+  <main>
+    <section id="incidents" class="tab-panel active">
+      <div class="panel-header">
+        <h2>Incident Logbook</h2>
+        <div class="inline-actions">
+          <input type="text" id="searchIncidents" placeholder="Search title/tags/status..." />
+          <button id="exportCsvBtn">Export CSV</button>
+          <button id="newIncidentBtn">New</button>
+        </div>
+      </div>
+      <div id="incidentForm" class="form hidden">
+        <h3 id="formTitle">New Incident</h3>
+        <div class="grid">
+          <label>Title<input type="text" id="iTitle" required></label>
+          <label>Severity
+            <select id="iSeverity"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+          </label>
+          <label>Status
+            <select id="iStatus"><option>Open</option><option>In Progress</option><option>Resolved</option></select>
+          </label>
+          <label>Tags (comma)<input type="text" id="iTags" placeholder="network, access"></label>
+          <label>Occurred At<input type="datetime-local" id="iWhen"></label>
+        </div>
+        <label>Description<textarea id="iDesc" rows="4" placeholder="What happened, triage steps, evidence, etc."></textarea></label>
+        <div class="form-actions">
+          <button id="saveIncidentBtn">Save</button>
+          <button id="cancelIncidentBtn" class="ghost">Cancel</button>
+        </div>
+      </div>
+      <table id="incidentsTable" class="table">
+        <thead><tr><th>Title</th><th>Severity</th><th>Status</th><th>When</th><th>Tags</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="access" class="tab-panel">
+      <div class="panel-header">
+        <h2>Access Review Checklist</h2>
+        <div class="inline-actions">
+          <button id="newAccessItemBtn">Add Item</button>
+          <button id="resetAccessBtn" class="ghost">Reset</button>
+        </div>
+      </div>
+      <div id="accessForm" class="form hidden">
+        <h3 id="accessFormTitle">New Checklist Item</h3>
+        <div class="grid">
+          <label>Item<textarea id="aItem" rows="2" placeholder="Quarterly access review for finance group"></textarea></label>
+          <label>Owner<input type="text" id="aOwner" placeholder="Name or team"></label>
+          <label>Due Date<input type="date" id="aDue"></label>
+        </div>
+        <div class="form-actions">
+          <button id="saveAccessBtn">Save</button>
+          <button id="cancelAccessBtn" class="ghost">Cancel</button>
+        </div>
+      </div>
+      <table id="accessTable" class="table">
+        <thead><tr><th>Done</th><th>Item</th><th>Owner</th><th>Due</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="logs" class="tab-panel">
+      <h2>Log Parser</h2>
+      <div class="grid">
+        <label>Paste Logs<textarea id="logInput" rows="10" placeholder="[2025-08-18T12:00:00Z] INFO connected&#10;[2025-08-18T12:01:00Z] ERROR auth failed"></textarea></label>
+        <label>Filter (regex or text)<input type="text" id="logFilter" placeholder="ERROR|WARN"></label>
+      </div>
+      <div class="form-actions">
+        <button id="runFilterBtn">Filter</button>
+        <button id="clearLogsBtn" class="ghost">Clear</button>
+      </div>
+      <pre id="logOutput" class="pre"></pre>
+    </section>
+
+    <section id="about" class="tab-panel">
+      <h2>About this demo</h2>
+      <p><strong>SecOps Lite</strong> runs entirely in your browser (localStorage). No backend.</p>
+      <ul>
+        <li>Incident Logbook: add/search/export (CSV/JSON)</li>
+        <li>Access Review: simple checklist with owner/due</li>
+        <li>Log Parser: paste logs + regex/text filter</li>
+        <li>Offline PWA: basic install/offline via Service Worker</li>
+      </ul>
+      <p>Author: <strong>Seunguk (David) Ok</strong>. Portfolio demo — no personal data transmitted.</p>
+    </section>
+  </main>
+
+  <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.0</span></footer>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
+  </script>
+</body>
+</html>
