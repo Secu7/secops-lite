@@ -49,3 +49,6 @@ html.light .btn{background:#f1f5f9;color:#0b1220;border-color:#cbd5e1}
 html.light .btn:hover{background:#e2e8f0}
 
 @media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}

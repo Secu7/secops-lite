@@ -13,10 +13,19 @@ function dt(x){ try{return x?new Date(x).toLocaleString():''}catch{return x||''}
 qs('#year').textContent = new Date().getFullYear();
 
 // ===== Tabs =====
-qsa('.tab').forEach(b=>b.addEventListener('click',e=>{
-  qsa('.tab').forEach(x=>x.classList.remove('active')); e.currentTarget.classList.add('active');
-  qsa('.tab-panel').forEach(p=>p.classList.remove('active')); qs('#'+e.currentTarget.dataset.tab).classList.add('active');
-}));
+qsa('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    // nav 버튼 상태
+    qsa('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    // 패널 표시
+    const target = btn.dataset.tab;                   // 예: 'about'
+    const panel = qs(`section#${CSS.escape(target)}`); // id 정확 매칭
+    qsa('.tab-panel').forEach(p=>p.classList.remove('active'));
+    if(panel){ panel.classList.add('active'); }
+    else { console.warn('Tab panel not found for', target); }
+  });
+});
 
 // ===== Theme =====
 qs('#darkModeBtn').addEventListener('click', ()=> document.documentElement.classList.toggle('light'));
