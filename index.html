@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SecOps Lite — Incident & Access Review Toolkit</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
   <meta name="theme-color" content="#0f172a">
   <!-- Charts & PDF -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
@@ -149,8 +149,8 @@
       <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
       <a class="btn" id="generateBigDemoBtn" href="#" onclick="return false;">Generate Full Demo (120 incidents)</a>
 
-      <a class="btn" href="PIPEDA_Quick_Check_David_Ok_v1.1.pdf" target="_blank" rel="noopener">
-        Open PIPEDA Quick-Check (PDF)
+      <a class="btn" href="PIPEDA.pdf" target="_blank" rel="noopener">
+        Open PIPEDA (PDF)
       </a>
       <p>Author: <strong>Seunguk (David) Ok</strong>. Portfolio demo — no personal data transmitted.</p>
     </section>
@@ -158,10 +158,10 @@
 
   <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.1</span></footer>
 
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=4'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=7'));
     }
   </script>
 </body>
