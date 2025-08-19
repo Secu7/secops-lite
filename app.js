@@ -328,10 +328,64 @@ window.addEventListener('load', ()=>{
   if(bigBtn) bigBtn.addEventListener('click', ()=>generateBigDemo(120,40));
 });
 
-// Big demo generator bind
+// ===== Big Demo Generator (no download) =====
+function rndChoice(a){ return a[Math.floor(Math.random()*a.length)] }
+function rndInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min }
+function fmtLocal(dt){ const y=dt.getFullYear(),m=String(dt.getMonth()+1).padStart(2,'0'),d=String(dt.getDate()).padStart(2,'0'); const H=String(dt.getHours()).padStart(2,'0'),M=String(dt.getMinutes()).padStart(2,'0'); return `${y}-${m}-${d}T${H}:${M}` }
+function generateBigDemo(nInc=120, nAccess=40){
+  const now = new Date();
+  const severities=["Low","Medium","High","Critical"];
+  const statuses=["Open","In Progress","Resolved"];
+  const tagsPool=["ids","siem","edr","mfa","vpn","waf","iam","o365","azure","ad","backup","db","phishing","malware","ransomware","patch","vuln","linux","windows","gpo","sso","network","latency","ssl","dns","dhcp","firewall","proxy","k8s","s3","ec2"];
+  const titles=["Unauthorized login attempts detected","Phishing report from user","Backup job failed on DB server","Endpoint malware quarantine event","VPN login from unusual location","Certificate about to expire","High CPU on application server","Suspicious PowerShell execution","Excessive 4xx on web gateway","Email forwarding rule created","Password spray detected","Service account token expired","Disk space low on file server","New admin added to Azure AD","Failed Windows updates","WAF blocked SQLi pattern","IDS burst after rule update","Unpatched critical CVE exposure","Database connection timeouts","S3 bucket public access attempt","Kubernetes pod crashloop","DHCP pool exhaustion warning","DNS zone transfer attempt","RDP port scan observed","Wi-Fi rogue AP detected","Suspicious OAuth consent","Shadow IT SaaS discovery","Okta MFA bypass attempt","Expired SSL on internal site","Abnormal data egress volume"];
+  const incs=[];
+  for(let i=0;i<nInc;i++){
+    const title=rndChoice(titles);
+    const sev=rndChoice(["Low","Medium","Medium","High","High","Critical"]);
+    const status=rndChoice(statuses);
+    const when=new Date(now.getTime()-rndInt(0,45)*86400000-rndInt(0,23)*3600000-rndInt(0,59)*60000);
+    let ack="",resolved="";
+    if(Math.random()<0.7){ ack=fmtLocal(new Date(when.getTime()+rndInt(5,240)*60000)); }
+    if(status==="Resolved" && Math.random()<0.85){ const base=ack?new Date(ack):when; resolved=fmtLocal(new Date(base.getTime()+rndInt(30,24*60)*60000)); }
+    const tags=[...new Set(Array.from({length:rndInt(2,4)},()=>rndChoice(tagsPool)))];
+    const desc=`${title}. Triage performed; scope validated. Actions: applied controls, updated playbook, notified stakeholders. Next steps: monitor and review in change window.`;
+    const evidence=Math.random()<0.6?[`https://example.com/ticket/${uid()}`,`https://example.com/logs/${uid()}`]:[];
+    incs.push({ id:uid(), title, severity:sev, status, tags, when:fmtLocal(when), ack, resolved, desc, evidence });
+  }
+  const owners=["IT Ops","Security","Helpdesk","Infra","IAM"];
+  const accessTexts=["Quarterly access review — Finance group","Terminate leavers — deprovision within 24h","Privileged accounts re-certification","Service accounts inventory & rotation","VPN access attestation","Shared mailbox ownership validation","Role-based access update — HRIS","Contractor access end-date check","Okta group membership review","External guest review — Teams/SharePoint","Admin portal access least-privilege check","Break-glass account controls review","Dormant account clean-up (90d)","Production DB access approvals audit","Firewall management access validation","S3 bucket access policy audit","GitHub org admin review","MFA exceptions review","SSO app entitlements baseline","New joiners access checklist QA"];
+  const acc=[];
+  for(let i=0;i<nAccess;i++){
+    const due=new Date(now.getTime()+rndInt(7,75)*86400000);
+    acc.push({ id:uid(), text:accessTexts[i%accessTexts.length], owner:rndChoice(owners), due:due.toISOString().slice(0,10), done:Math.random()<0.2 });
+  }
+  state.incidents=incs; state.access=acc; saveState(); renderIncidents(); renderAccess(); computeKPIs(); drawSevChart();
+  alert(`Generated ${nInc} incidents + ${nAccess} access items`);
+}
+
+// ===== PDF open / status test (robust) =====
+function getPdfUrl(){
+  // 권장: PDF를 index.html과 같은 폴더(루트)에 둔다.
+  return `./PIPEDA_Quick_Check_David_Ok_v1.1.pdf?ts=${Date.now()}`;
+}
+async function testPdf(){
+  try{
+    const u = getPdfUrl();
+    // 일부 서버는 HEAD 금지 → GET + range 짧게
+    const res = await fetch(u, { method:'GET', headers:{ 'Range':'bytes=0-10' } });
+    alert(`PDF status: ${res.status} ${res.ok?'(OK)':'(NG)'}\nURL: ${u}`);
+  }catch(e){ alert('PDF test failed: '+ e.message); }
+}
+function openPdf(){
+  const u = getPdfUrl();
+  window.open(u, '_blank', 'noopener');
+}
+
+// ===== Button bindings (force) =====
 window.addEventListener('load', ()=>{
-  const bigBtn = document.getElementById('generateBigDemoBtn');
-  if(bigBtn) bigBtn.addEventListener('click', ()=>generateBigDemo(120,40));
-  const seedBtn = document.getElementById('loadDemoBtn');
-  if(seedBtn) seedBtn.addEventListener('click', loadDemoData);
+  const s1=document.getElementById('loadDemoBtn'); if(s1) s1.addEventListener('click', loadDemoData);
+  const s2=document.getElementById('generateBigDemoBtn'); if(s2) s2.addEventListener('click', ()=>generateBigDemo(120,40));
+  const p1=document.getElementById('openPdfBtn'); if(p1) p1.addEventListener('click', openPdf);
+  const p2=document.getElementById('testPdfBtn'); if(p2) p2.addEventListener('click', testPdf);
 });
+

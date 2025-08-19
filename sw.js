@@ -1,12 +1,12 @@
 // Bump this when you deploy new files
-const CACHE = 'secops-lite-v5';
+const CACHE = 'secops-lite-v6';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=4',
-  './app.js?v=4'
+  './style.css?v=6',
+  './app.js?v=6'
   // Optional: cache PDF for offline
-  // './docs/PIPEDA_Quick_Check_David_Ok_v1.1.pdf'
+  ./PIPEDA_Quick_Check_David_Ok_v1.1.pdf'
 ];
 
 self.addEventListener('install', e=>{

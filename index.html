@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SecOps Lite — Incident & Access Review Toolkit</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
   <meta name="theme-color" content="#0f172a">
   <!-- Charts & PDF -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
@@ -147,15 +147,20 @@
         <li>Offline PWA: Service Worker caching</li>
       </ul>
       <a class="btn" id="loadDemoBtn" href="#" onclick="return false;">Load Sample Data</a>
-      <a class="btn" href="docs/PIPEDA_Quick_Check_David_Ok_v1.1.pdf" target="_blank" rel="noopener">Open PIPEDA Quick-Check (PDF)</a>
       <a class="btn" id="generateBigDemoBtn" href="#" onclick="return false;">Generate Full Demo (120 incidents)</a>
+
+      <!-- PDF: 루트에 둘 경우(추천) -->
+      <a class="btn" id="openPdfBtn" href="#" onclick="return false;">Open PIPEDA Quick-Check (PDF)</a>
+      <a class="btn" id="testPdfBtn" href="#" onclick="return false;">Test PDF Status</a>
+      <p class="small">Tip: Place the file next to index.html as <code>PIPEDA_Quick_Check_David_Ok_v1.1.pdf</code></p>
+
       <p>Author: <strong>Seunguk (David) Ok</strong>. Portfolio demo — no personal data transmitted.</p>
     </section>
   </main>
 
   <footer class="app-footer"><span>© <span id="year"></span> SecOps Lite · v1.1</span></footer>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=4'));
