@@ -328,3 +328,10 @@ window.addEventListener('load', ()=>{
   if(bigBtn) bigBtn.addEventListener('click', ()=>generateBigDemo(120,40));
 });
 
+// Big demo generator bind
+window.addEventListener('load', ()=>{
+  const bigBtn = document.getElementById('generateBigDemoBtn');
+  if(bigBtn) bigBtn.addEventListener('click', ()=>generateBigDemo(120,40));
+  const seedBtn = document.getElementById('loadDemoBtn');
+  if(seedBtn) seedBtn.addEventListener('click', loadDemoData);
+});
