@@ -1,5 +1,5 @@
 // Bump this when you deploy new files
-const CACHE = 'secops-lite-v4';
+const CACHE = 'secops-lite-v5';
 const ASSETS = [
   './',
   './index.html',
